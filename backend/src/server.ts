@@ -34,7 +34,9 @@ let latestData: object = {};
 
 function connectToSimulator() {
   console.log("Connecting to Python simulator...");
-  simulatorWs = new WebSocket("ws://localhost:8765");
+  //simulatorWs = new WebSocket("ws://localhost:8765");
+  const SIMULATOR_URL = process.env.SIMULATOR_URL || "ws://localhost:8765";
+  simulatorWs = new WebSocket(SIMULATOR_URL);
 
   simulatorWs.on("open", () => {
     console.log("Connected to simulator");

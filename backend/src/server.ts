@@ -11,6 +11,13 @@ dotenv.config();
 // Socket.io läuft darauf und ermöglicht Echtzeit-Kommunikation mit dem Frontend
 const app = express();
 app.use(express.json());
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "http://localhost:5173");
+  res.header("Access-Control-Allow-Headers", "Content-Type");
+  res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  if (req.method === "OPTIONS") return res.sendStatus(200);
+  next();
+});
 
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
@@ -85,19 +92,25 @@ app.post("/api/analyze", async (req, res) => {
 
   try {
     const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+      "https://api.groq.com/openai/v1/chat/completions",
       {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${process.env.GROQ_API_KEY}`,
+        },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
+          model: "llama3-8b-8192",
+          messages: [{ role: "user", content: prompt }],
+          max_tokens: 200,
         }),
       }
     );
 
-    const data = await response.json() as any;
-    const text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No analysis available";
-    res.json({ analysis: text });
+  const data = await response.json() as any;
+  console.log("Groq response:", JSON.stringify(data, null, 2));
+  const text = data.choices?.[0]?.message?.content ?? "No analysis available";
+  res.json({ analysis: text });
   } catch (err) {
     console.error("Gemini API error:", err);
     res.status(500).json({ error: "Analysis failed" });
